@@ -1,47 +1,60 @@
 package com.myspace.challengesApp;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 public class challengeController {
-    private List<Challenge> challenges = new ArrayList<>();
-    public challengeController(){
-        Challenge challenge1 = new Challenge(1L,"January", "Sample description");
-        challenges.add(challenge1);
-    }
-    public Optional<Challenge> findById(long id) {
-        return challenges.stream().filter(challenge -> challenge.getId() == id).findFirst();
-    }
+    @Autowired
+    private ChallengeRepository challengeRepository;
+
     @GetMapping("/challenges")
     public List<Challenge>  getAllChanllenges(){
-        return this.challenges;
+        return challengeRepository.findAll();
     }
 
     @PostMapping("/challenges")
     public String  addChallenge(@RequestBody Challenge challenge){
-        challenges.add(challenge);
+        challengeRepository.save(challenge);
         return "Challenge added Succesfully";
     }
 
-    @GetMapping("/challenges/{id}")
+    @GetMapping("challenges/{id}")
     public Optional<Challenge> getChallenge(@PathVariable("id") long id){
-        return challenges.stream().filter(challenge -> challenge.getId() == id).findFirst();
+        return challengeRepository.findById(id);
     }
 
-    @PutMapping("/challenges/{id}")
-    public String updateChallenge(@PathVariable("id") long id, @RequestBody Challenge newchallenge){
-        Optional<Challenge> existingChallenge = findById(id);
+    @PutMapping("challenges/{id}")
+    public String updateChallenge(@PathVariable("id") long id, @RequestBody Challenge challenge){
+        Optional<Challenge> existingChallenge = challengeRepository.findById(id);
         if(existingChallenge.isPresent()){
-            Challenge challengeInst = existingChallenge.get();
-            challengeInst.setMonth(newchallenge.getMonth());
-            challengeInst.setDescription(newchallenge.getDescription());
+            Challenge challenge1 = existingChallenge.get();
+            challenge1.setMonth(challenge.getMonth());
+            challenge1.setDescription(challenge.getDescription());
+            challengeRepository.save(challenge1);
             return "Update Successfull";
         }
-        return "There is an issue with the Request, Please check the logs ";
+
+        return "Challenge not found";
     }
+
+    @DeleteMapping("challenges/{id}")
+    public ResponseEntity<String> deleteChallenge(@PathVariable("id") long id){
+        Optional<Challenge> optionalChallenge = challengeRepository.findById(id);
+        if(optionalChallenge.isPresent()){
+            challengeRepository.deleteById(id);
+            return ResponseEntity.ok("Challenge Deleted Successfully");
+        }
+        else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }
 
